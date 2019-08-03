@@ -6,6 +6,8 @@ class ViewController: UIViewController {
     
     var cutWindow: UIView!
     
+    var inputImage: UIImage?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -19,15 +21,18 @@ class ViewController: UIViewController {
         }
         let url = URL(fileURLWithPath: filePath)
          */
-        guard let inputImage = UIImage(named: "grayscale") else {
+        inputImage = UIImage(named: "grayscale")
+        if inputImage == nil {
             return
         }
         
+        /*
         // 切り抜き
         let cropRect = CGRect(x: 0, y: 0, width: 400, height: 200)
         guard let cutImage = inputImage.cgImage?.cropping(to: cropRect) else {
             return
         }
+         */
         
         // UIImage生成
         // let image = UIImage(cgImage: cutImage)
@@ -36,7 +41,7 @@ class ViewController: UIViewController {
         // imageViewに表示
         // imageView.frame = CGRect(x: 0, y: 254, width: image.size.width, height: image.size.height)
         // imageView.frame.size = CGSize(width: 414, height: 300)
-        imageView.contentMode = .scaleAspectFit
+        // imageView.contentMode = .scaleAspectFit
         imageView.image = inputImage
         // imageView.isHidden = true
         
@@ -45,12 +50,14 @@ class ViewController: UIViewController {
         cutWindow.frame = CGRect(x: 50, y: 50, width: 200, height: 200)
         cutWindow.backgroundColor = .lightGray
         cutWindow.alpha = 0.4
-        // cutWindow.isUserInteractionEnabled = true
+        cutWindow.isUserInteractionEnabled = true
         let dragGesture = UIPanGestureRecognizer(target: self, action: #selector(dragWindow(_:)))
+        imageView.addGestureRecognizer(dragGesture)
+        
         imageView.addSubview(cutWindow)
         imageView.isUserInteractionEnabled = true
-    
-        imageView.addGestureRecognizer(dragGesture)
+        
+        print("image size : \(imageView.image!.size)")
     }
     
     // 切り抜き窓をドラッグした
@@ -59,6 +66,19 @@ class ViewController: UIViewController {
         print("location : \(location)")
         
         let threshold: Float = 50.0
+        
+        // ウィンドウの座標を制限
+        if location.y <= 0 {
+            location.y = 0
+        } else if location.y >= imageView.frame.size.height {
+            location.y = imageView.frame.size.height
+        }
+        
+        if location.x <= 0 {
+            location.x = 0
+        } else if location.x >= imageView.frame.size.width {
+            location.x = imageView.frame.size.width
+        }
         
         // フレームの右側
         if fabsf(Float(location.x) - Float(cutWindow.frame.maxX)) <= threshold {
@@ -126,7 +146,20 @@ class ViewController: UIViewController {
         }
 
     }
-
+    
+    @IBAction func cropImage(_ sender: UIButton) {
+        let cutRect = cutWindow.frame
+        let scale = max(inputImage!.size.width / imageView.frame.size.width, inputImage!.size.height / imageView.frame.size.height)
+        // 切り抜き
+        let point = CGPoint(x: cutRect.origin.x * scale, y: cutRect.origin.y * scale)
+        let size = CGSize(width: cutRect.size.width * scale, height: cutRect.size.height * scale)
+        let cropRect = CGRect(origin: point, size: size)
+        
+        guard let cutImage = inputImage!.cgImage?.cropping(to: cropRect) else {
+            return
+        }
+        imageView.image = UIImage(cgImage: cutImage)
+    }
 
 }
 
